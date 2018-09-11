@@ -1,0 +1,6 @@
+[package]
+name = "emubayer"
+version = "0.1.0"
+authors = ["TofuLynx <cfpgcp3@gmail.com>"]
+
+[dependencies]

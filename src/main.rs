@@ -3,13 +3,13 @@ extern crate png;
 use std::fs::File;
 
 mod info;
+#[cfg(test)]
+mod tests;
 
 enum BitDepth {
     Eight,
     Sixteen,
 }
-
-
 
 struct RgbImage {
     width: u32,
@@ -26,8 +26,7 @@ impl RgbImage {
         // Start decoding and get info from image.
         let (info, mut reader) = decoder.read_info().map_err(|_| info::error::DECODING_PNG)?;
 
-        // Check if valid Color Type (RGB only).
-        // TODO (TofuLynx): Evaluate wether or not to extend support to RGBA Color Type.
+        // TODO (TofuLynx): Evaluate whether or not to extend support to RGBA Color Type.
         if info.color_type != png::ColorType::RGB {
             return Err(info::error::INVALID_COLOR_TYPE);
         }
@@ -107,7 +106,7 @@ enum BayerPattern {
 }
 
 impl BayerPattern {
-    pub fn from_str(bayer_pattern: &str) -> Result<BayerPattern, &str> {
+    fn from_str(bayer_pattern: &str) -> Result<BayerPattern, &str> {
         match bayer_pattern.to_uppercase().trim() {
             "RGGB" => Ok(BayerPattern::RGGB),
             "BGGR" => Ok(BayerPattern::BGGR),
@@ -117,7 +116,7 @@ impl BayerPattern {
         }
     }
 
-    pub fn color_offsets(&self) -> Vec<usize> {
+    fn color_offsets(&self) -> Vec<usize> {
         match self {
             BayerPattern::RGGB => vec![0, 1, 1, 2],
             BayerPattern::BGGR => vec![2, 1, 1, 0],
@@ -150,7 +149,6 @@ fn main() {
     };
 
     let raw_image = rgb_image.to_raw(BayerPattern::RGGB);
-    
 
     println!("Hello, world!");
 }

@@ -1,3 +1,7 @@
+// Author: Cláudio Gomes (TofuLynx)
+// Project: emubayer
+// License: GNU GPL Version 3 (https://www.gnu.org/licenses/gpl-3.0.en.html)
+
 extern crate png;
 
 use std::fs::File;
@@ -20,21 +24,18 @@ struct RgbImage {
 
 impl RgbImage {
     pub fn from_file(path: &str) -> Result<RgbImage, &str> {
-        // Initialize decoder with provided file.
-        let decoder = png::Decoder::new(File::open(path).map_err(|_| info::error::INVALID_PNG)?);
+        let png_file = File::open(path)
+            .map_err(|_| info::error::INVALID_PNG)?;
 
-        // Start decoding and get info from image.
-        let (info, mut reader) = decoder.read_info().map_err(|_| info::error::DECODING_PNG)?;
+        let decoder = png::Decoder::new(png_file);
+        let (info, mut reader) = decoder.read_info()
+            .map_err(|_| info::error::DECODING_PNG)?;
 
         // TODO (TofuLynx): Evaluate whether or not to extend support to RGBA Color Type.
         if info.color_type != png::ColorType::RGB {
             return Err(info::error::INVALID_COLOR_TYPE);
         }
 
-        // Initialize vector to store image data.
-        let mut data = vec![0; info.buffer_size()];
-
-        // Check if valid Bit Depth (8 or 16 only) and matches it.
         let bit_depth = match info.bit_depth {
             png::BitDepth::Eight => BitDepth::Eight,
             png::BitDepth::Sixteen => BitDepth::Sixteen,
@@ -44,8 +45,8 @@ impl RgbImage {
         };
 
         // Decode frame.
-        reader
-            .next_frame(&mut data)
+        let mut data = vec![0; info.buffer_size()];
+        reader.next_frame(&mut data)
             .map_err(|_| info::error::CONVERTING_PNG)?;
 
         Ok(RgbImage {
@@ -61,7 +62,6 @@ impl RgbImage {
     }
 
     pub fn to_raw(self, bayer_pattern: BayerPattern) -> RawImage {
-        // TODO (TofuLynx): RgbImage.to_raw
         let width = self.width as usize;
         let height = self.height as usize;
         let color_offsets = bayer_pattern.color_offsets();

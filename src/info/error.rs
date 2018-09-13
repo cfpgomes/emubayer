@@ -1,3 +1,7 @@
+// Author: Cláudio Gomes (TofuLynx)
+// Project: emubayer
+// License: GNU GPL Version 3 (https://www.gnu.org/licenses/gpl-3.0.en.html)
+
 pub static INVALID_PATTERN: &str = "\
 Could not parse the bayer pattern. Please enter one of the following:
     RGGB

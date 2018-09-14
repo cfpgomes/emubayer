@@ -151,14 +151,21 @@ impl RawImage {
 
         dng_file.write_all(&header).unwrap();
 
-        let ifd0_entries = 4;
+        let ifd0_entries = 5;
 
         // Write IFD0.
         let mut ifd0 = Vec::new();
         ifd0.write_u16::<LittleEndian>(ifd0_entries).unwrap(); // Number of Entries
 
+        // Entry 0
+        ifd0.write_u16::<LittleEndian>(0x0112).unwrap(); // Orientation
+        ifd0.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
+        ifd0.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
+        ifd0.write_u16::<LittleEndian>(1).unwrap(); // Value: Horizontal
+        ifd0.write_u16::<LittleEndian>(0).unwrap();
+
         // Entry 1
-        ifd0.write_u16::<LittleEndian>(0x014A).unwrap(); // SubIFDs
+        ifd0.write_u16::<LittleEndian>(0x014A).unwrap(); // SubIFDs Offset
         ifd0.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
         ifd0.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
         ifd0.write_u32::<LittleEndian>(14 + 12 * (ifd0_entries as u32)).unwrap(); // Value: Offset to raw subIFD
@@ -186,7 +193,7 @@ impl RawImage {
         ifd0.write_u8(0x01).unwrap(); 
         ifd0.write_u8(0x04).unwrap();
         ifd0.write_u8(0x00).unwrap();
-        ifd0.write_u8(0x00).unwrap(); 
+        ifd0.write_u8(0x00).unwrap();
 
         ifd0.write_u32::<LittleEndian>(0).unwrap(); // OFFSET TO NEXT IFD (what is it?)
 
@@ -258,7 +265,7 @@ impl RawImage {
         raw_ifd.write_u16::<LittleEndian>(0x0117).unwrap(); // StripByteCounts
         raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
         raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u32::<LittleEndian>(self.height * 2).unwrap(); 
+        raw_ifd.write_u32::<LittleEndian>(self.width * self.height * 2).unwrap(); 
 
         raw_ifd.write_u32::<LittleEndian>(0).unwrap(); // OFFSET TO NEXT IFD (what is it?)
 
@@ -268,7 +275,7 @@ impl RawImage {
         let mut image_bytes = Vec::new();
 
         for index in 0..self.data.len() {
-            image_bytes.write_u16::<BigEndian>(self.data[index]).unwrap();
+            image_bytes.write_u16::<LittleEndian>(self.data[index]).unwrap();
         }
 
         dng_file.write_all(&image_bytes).unwrap();

@@ -3,8 +3,12 @@
 // License: GNU GPL Version 3 (https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 extern crate png;
+extern crate byteorder;
+
 
 use std::fs::File;
+use std::io::prelude::*;
+use byteorder::{WriteBytesExt, BigEndian, LittleEndian};
 
 mod info;
 #[cfg(test)]
@@ -134,8 +138,21 @@ struct RawImage {
 }
 
 impl RawImage {
-    pub fn save_as_dng() {
+    pub fn save_as_dng(&self, file_path: &str) {
         // TODO (TofuLynx): RawImage.to_dng
+        // TODO (TofuLynx): Handle errors.
+        let mut dng_file = File::create(file_path).unwrap();
+
+        // Write header.
+        let mut header = Vec::new();
+        header.write_u16::<LittleEndian>(0x4949).unwrap();
+        header.write_u16::<LittleEndian>(42).unwrap();
+        header.write_u32::<LittleEndian>(8).unwrap();
+
+        dng_file.write_all(&header).unwrap();
+
+
+        // Write IFD.
     }
 }
 
@@ -149,6 +166,7 @@ fn main() {
     };
 
     let raw_image = rgb_image.to_raw(BayerPattern::RGGB);
+    raw_image.save_as_dng("lol.dng");
 
     println!("Hello, world!");
 }

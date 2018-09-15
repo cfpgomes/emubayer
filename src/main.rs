@@ -151,49 +151,20 @@ impl RawImage {
 
         dng_file.write_all(&header).unwrap();
 
-        let ifd0_entries = 5;
+        let ifd0_entries = 1;
+        let raw_ifd_entries = 14;
 
         // Write IFD0.
         let mut ifd0 = Vec::new();
         ifd0.write_u16::<LittleEndian>(ifd0_entries).unwrap(); // Number of Entries
 
         // Entry 0
-        ifd0.write_u16::<LittleEndian>(0x0112).unwrap(); // Orientation
-        ifd0.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
-        ifd0.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        ifd0.write_u16::<LittleEndian>(1).unwrap(); // Value: Horizontal
-        ifd0.write_u16::<LittleEndian>(0).unwrap();
-
-        // Entry 1
         ifd0.write_u16::<LittleEndian>(0x014A).unwrap(); // SubIFDs Offset
         ifd0.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
         ifd0.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        ifd0.write_u32::<LittleEndian>(14 + 12 * (ifd0_entries as u32)).unwrap(); // Value: Offset to raw subIFD
+        ifd0.write_u32::<LittleEndian>(8 + 6 + 12 * (ifd0_entries as u32)).unwrap(); // Value: Offset to raw subIFD
 
-        // Entry 2
-        ifd0.write_u16::<LittleEndian>(0x828D).unwrap(); // CFARepeatPatternDim
-        ifd0.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
-        ifd0.write_u32::<LittleEndian>(2).unwrap(); // Count: 2 values
-        ifd0.write_u16::<LittleEndian>(2).unwrap();
-        ifd0.write_u16::<LittleEndian>(2).unwrap();
-
-        // Entry 3
-        ifd0.write_u16::<LittleEndian>(0x828E).unwrap(); // CFAPattern2
-        ifd0.write_u16::<LittleEndian>(3).unwrap(); // Type: BYTE
-        ifd0.write_u32::<LittleEndian>(2).unwrap(); // Count: 4 values
-        ifd0.write_u8(0).unwrap(); // TODO: Support different patterns.
-        ifd0.write_u8(1).unwrap();
-        ifd0.write_u8(1).unwrap();
-        ifd0.write_u8(2).unwrap();
-
-        // Entry 4
-        ifd0.write_u16::<LittleEndian>(0xC612).unwrap(); // DNGVersion
-        ifd0.write_u16::<LittleEndian>(1).unwrap(); // Type: BYTE
-        ifd0.write_u32::<LittleEndian>(4).unwrap(); // Count: 4 values
-        ifd0.write_u8(0x01).unwrap(); 
-        ifd0.write_u8(0x04).unwrap();
-        ifd0.write_u8(0x00).unwrap();
-        ifd0.write_u8(0x00).unwrap();
+        
 
         ifd0.write_u32::<LittleEndian>(0).unwrap(); // OFFSET TO NEXT IFD (what is it?)
 
@@ -201,58 +172,65 @@ impl RawImage {
 
         // Write rawIFD.
         let mut raw_ifd = Vec::new();
-        raw_ifd.write_u16::<LittleEndian>(10).unwrap(); // Number of Entries
+        raw_ifd.write_u16::<LittleEndian>(raw_ifd_entries).unwrap(); // Number of Entries
 
-        // Entry 1
+        // Entry 0
         raw_ifd.write_u16::<LittleEndian>(0xFE).unwrap(); // NewSubFileType
         raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
         raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
         raw_ifd.write_u32::<LittleEndian>(0).unwrap(); 
 
-        // Entry 2
+        // Entry 1
         raw_ifd.write_u16::<LittleEndian>(0x100).unwrap(); // ImageWidth
         raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
         raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
         raw_ifd.write_u32::<LittleEndian>(self.width).unwrap(); 
 
-        // Entry 3
+        // Entry 2
         raw_ifd.write_u16::<LittleEndian>(0x101).unwrap(); // ImageLength
         raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
         raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
         raw_ifd.write_u32::<LittleEndian>(self.height).unwrap(); 
 
-        // Entry 4
+        // Entry 3
         raw_ifd.write_u16::<LittleEndian>(0x102).unwrap(); // BitDepth
         raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
         raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
         raw_ifd.write_u16::<LittleEndian>(16).unwrap();
         raw_ifd.write_u16::<LittleEndian>(0).unwrap();
 
-        // Entry 5
+        // Entry 4
         raw_ifd.write_u16::<LittleEndian>(0x103).unwrap(); // Compression
         raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
         raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
         raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Value: Uncompressed
         raw_ifd.write_u16::<LittleEndian>(0).unwrap();
 
-        // Entry 6
+        // Entry 5
         raw_ifd.write_u16::<LittleEndian>(0x106).unwrap(); // PhotometricInterpretation
         raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
         raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
         raw_ifd.write_u16::<LittleEndian>(32803).unwrap(); // Value: Color Filter Array
         raw_ifd.write_u16::<LittleEndian>(0).unwrap();
 
-        // Entry 7
+        // Entry 6
         raw_ifd.write_u16::<LittleEndian>(0x111).unwrap(); // StripOffsets
         raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
         raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u32::<LittleEndian>(12 * (ifd0_entries as u32) + 140).unwrap(); // Offset to image bytes
+        raw_ifd.write_u32::<LittleEndian>(8 + 2*6 + 12 * (ifd0_entries as u32 + raw_ifd_entries as u32)).unwrap(); // Offset to image bytes
+
+        // Entry 7
+        raw_ifd.write_u16::<LittleEndian>(0x0112).unwrap(); // Orientation
+        raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
+        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
+        raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Value: Horizontal
+        raw_ifd.write_u16::<LittleEndian>(0).unwrap();
 
         // Entry 8
         raw_ifd.write_u16::<LittleEndian>(0x115).unwrap(); // SamplesPerPixel
         raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
         raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Value: Number of color channels, 1 for monochrome TODO (Tofulynx): Is this right?
+        raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Value: Number of color channels, 1 for monochrome
         raw_ifd.write_u16::<LittleEndian>(0).unwrap();
 
         // Entry 9
@@ -266,6 +244,32 @@ impl RawImage {
         raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
         raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
         raw_ifd.write_u32::<LittleEndian>(self.width * self.height * 2).unwrap(); 
+
+
+        // Entry 11
+        raw_ifd.write_u16::<LittleEndian>(0x828D).unwrap(); // CFARepeatPatternDim
+        raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
+        raw_ifd.write_u32::<LittleEndian>(2).unwrap(); // Count: 2 values
+        raw_ifd.write_u16::<LittleEndian>(2).unwrap();
+        raw_ifd.write_u16::<LittleEndian>(2).unwrap();
+
+        // Entry 12
+        raw_ifd.write_u16::<LittleEndian>(0x828E).unwrap(); // CFAPattern2
+        raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Type: BYTE
+        raw_ifd.write_u32::<LittleEndian>(4).unwrap(); // Count: 4 values
+        raw_ifd.write_u8(0).unwrap(); // TODO: Support different patterns.
+        raw_ifd.write_u8(1).unwrap();
+        raw_ifd.write_u8(1).unwrap();
+        raw_ifd.write_u8(2).unwrap();
+
+        // Entry 13
+        raw_ifd.write_u16::<LittleEndian>(0xC612).unwrap(); // DNGVersion
+        raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Type: BYTE
+        raw_ifd.write_u32::<LittleEndian>(4).unwrap(); // Count: 4 values
+        raw_ifd.write_u8(0x01).unwrap(); 
+        raw_ifd.write_u8(0x04).unwrap();
+        raw_ifd.write_u8(0x00).unwrap();
+        raw_ifd.write_u8(0x00).unwrap();
 
         raw_ifd.write_u32::<LittleEndian>(0).unwrap(); // OFFSET TO NEXT IFD (what is it?)
 

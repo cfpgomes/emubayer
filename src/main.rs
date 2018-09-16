@@ -284,8 +284,8 @@ impl RawImage {
         // Image bytes
         let mut image_bytes = Vec::new();
 
-        for index in 0..self.data.len() {
-            image_bytes.write_u16::<LittleEndian>(self.data[index]).unwrap();
+        for &index in self.data.iter() {
+            image_bytes.write_u16::<LittleEndian>(index).unwrap();
         }
 
         dng_file.write_all(&image_bytes).unwrap();

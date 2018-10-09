@@ -3,12 +3,14 @@
 // License: GNU GPL Version 3 (https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 extern crate png;
+extern crate tiff_encoder;
 extern crate byteorder;
 
 
 use std::fs::File;
-use std::io::prelude::*;
-use byteorder::{WriteBytesExt, BigEndian, LittleEndian};
+use tiff_encoder::*;
+use tiff_encoder::tiff_type::*;
+use byteorder::{WriteBytesExt, LittleEndian};
 
 mod info;
 #[cfg(test)]
@@ -77,19 +79,19 @@ impl RgbImage {
             for column in (0..width).step_by(2) {
                 // Top Left.
                 raw_index = row * width + column;
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[0])] as u16) << 8;
+                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[0] as usize)] as u16) << 8;
 
                 // Top Right.
                 raw_index += 1;
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[1])] as u16) << 8;
+                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[1] as usize)] as u16) << 8;
 
                 // Bottom Right.
                 raw_index += width;
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[3])] as u16) << 8;
+                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[3] as usize)] as u16) << 8;
 
                 // Bottom Left.
                 raw_index -= 1;
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[2])] as u16) << 8;
+                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[2] as usize)] as u16) << 8;
             }
         }
 
@@ -120,7 +122,7 @@ impl BayerPattern {
         }
     }
 
-    fn color_offsets(&self) -> Vec<usize> {
+    fn color_offsets(&self) -> Vec<u8> {
         match self {
             BayerPattern::RGGB => vec![0, 1, 1, 2],
             BayerPattern::BGGR => vec![2, 1, 1, 0],
@@ -139,150 +141,42 @@ struct RawImage {
 
 impl RawImage {
     pub fn save_as_dng(&self, file_path: &str) {
-        // TODO (TofuLynx): RawImage.to_dng
-        // TODO (TofuLynx): Handle errors.
-        let mut dng_file = File::create(file_path).unwrap();
 
-        // Write header.
-        let mut header = Vec::new();
-        header.write_u16::<LittleEndian>(0x4949).unwrap(); // Byte order: II
-        header.write_u16::<LittleEndian>(42).unwrap(); // Magic number: 42
-        header.write_u32::<LittleEndian>(8).unwrap(); // Offset to IFD0: 8
-
-        dng_file.write_all(&header).unwrap();
-
-        let ifd0_entries = 1;
-        let raw_ifd_entries = 14;
-
-        // Write IFD0.
-        let mut ifd0 = Vec::new();
-        ifd0.write_u16::<LittleEndian>(ifd0_entries).unwrap(); // Number of Entries
-
-        // Entry 0
-        ifd0.write_u16::<LittleEndian>(0x014A).unwrap(); // SubIFDs Offset
-        ifd0.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
-        ifd0.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        ifd0.write_u32::<LittleEndian>(8 + 6 + 12 * (ifd0_entries as u32)).unwrap(); // Value: Offset to raw subIFD
-
-        
-
-        ifd0.write_u32::<LittleEndian>(0).unwrap(); // OFFSET TO NEXT IFD (what is it?)
-
-        dng_file.write_all(&ifd0).unwrap();
-
-        // Write rawIFD.
-        let mut raw_ifd = Vec::new();
-        raw_ifd.write_u16::<LittleEndian>(raw_ifd_entries).unwrap(); // Number of Entries
-
-        // Entry 0
-        raw_ifd.write_u16::<LittleEndian>(0xFE).unwrap(); // NewSubFileType
-        raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u32::<LittleEndian>(0).unwrap(); 
-
-        // Entry 1
-        raw_ifd.write_u16::<LittleEndian>(0x100).unwrap(); // ImageWidth
-        raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u32::<LittleEndian>(self.width).unwrap(); 
-
-        // Entry 2
-        raw_ifd.write_u16::<LittleEndian>(0x101).unwrap(); // ImageLength
-        raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u32::<LittleEndian>(self.height).unwrap(); 
-
-        // Entry 3
-        raw_ifd.write_u16::<LittleEndian>(0x102).unwrap(); // BitDepth
-        raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u16::<LittleEndian>(16).unwrap();
-        raw_ifd.write_u16::<LittleEndian>(0).unwrap();
-
-        // Entry 4
-        raw_ifd.write_u16::<LittleEndian>(0x103).unwrap(); // Compression
-        raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Value: Uncompressed
-        raw_ifd.write_u16::<LittleEndian>(0).unwrap();
-
-        // Entry 5
-        raw_ifd.write_u16::<LittleEndian>(0x106).unwrap(); // PhotometricInterpretation
-        raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u16::<LittleEndian>(32803).unwrap(); // Value: Color Filter Array
-        raw_ifd.write_u16::<LittleEndian>(0).unwrap();
-
-        // Entry 6
-        raw_ifd.write_u16::<LittleEndian>(0x111).unwrap(); // StripOffsets
-        raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u32::<LittleEndian>(8 + 2*6 + 12 * (ifd0_entries as u32 + raw_ifd_entries as u32)).unwrap(); // Offset to image bytes
-
-        // Entry 7
-        raw_ifd.write_u16::<LittleEndian>(0x0112).unwrap(); // Orientation
-        raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Value: Horizontal
-        raw_ifd.write_u16::<LittleEndian>(0).unwrap();
-
-        // Entry 8
-        raw_ifd.write_u16::<LittleEndian>(0x115).unwrap(); // SamplesPerPixel
-        raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Value: Number of color channels, 1 for monochrome
-        raw_ifd.write_u16::<LittleEndian>(0).unwrap();
-
-        // Entry 9
-        raw_ifd.write_u16::<LittleEndian>(0x0116).unwrap(); // RowsPerStrip
-        raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u32::<LittleEndian>(self.height).unwrap(); 
-
-        // Entry 10
-        raw_ifd.write_u16::<LittleEndian>(0x0117).unwrap(); // StripByteCounts
-        raw_ifd.write_u16::<LittleEndian>(4).unwrap(); // Type: LONG
-        raw_ifd.write_u32::<LittleEndian>(1).unwrap(); // Count: 1 value
-        raw_ifd.write_u32::<LittleEndian>(self.width * self.height * 2).unwrap(); 
-
-
-        // Entry 11
-        raw_ifd.write_u16::<LittleEndian>(0x828D).unwrap(); // CFARepeatPatternDim
-        raw_ifd.write_u16::<LittleEndian>(3).unwrap(); // Type: SHORT
-        raw_ifd.write_u32::<LittleEndian>(2).unwrap(); // Count: 2 values
-        raw_ifd.write_u16::<LittleEndian>(2).unwrap();
-        raw_ifd.write_u16::<LittleEndian>(2).unwrap();
-
-        // Entry 12
-        raw_ifd.write_u16::<LittleEndian>(0x828E).unwrap(); // CFAPattern2
-        raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Type: BYTE
-        raw_ifd.write_u32::<LittleEndian>(4).unwrap(); // Count: 4 values
-        raw_ifd.write_u8(0).unwrap(); // TODO: Support different patterns.
-        raw_ifd.write_u8(1).unwrap();
-        raw_ifd.write_u8(1).unwrap();
-        raw_ifd.write_u8(2).unwrap();
-
-        // Entry 13
-        raw_ifd.write_u16::<LittleEndian>(0xC612).unwrap(); // DNGVersion
-        raw_ifd.write_u16::<LittleEndian>(1).unwrap(); // Type: BYTE
-        raw_ifd.write_u32::<LittleEndian>(4).unwrap(); // Count: 4 values
-        raw_ifd.write_u8(0x01).unwrap(); 
-        raw_ifd.write_u8(0x04).unwrap();
-        raw_ifd.write_u8(0x00).unwrap();
-        raw_ifd.write_u8(0x00).unwrap();
-
-        raw_ifd.write_u32::<LittleEndian>(0).unwrap(); // OFFSET TO NEXT IFD (what is it?)
-
-        dng_file.write_all(&raw_ifd).unwrap();
-
-        // Image bytes.
+        // Image bytes
         let mut image_bytes = Vec::new();
 
-        for index in 0..self.data.len() {
-            image_bytes.write_u16::<LittleEndian>(self.data[index]).unwrap();
+        for &val in self.data.iter() {
+            image_bytes.write_u16::<LittleEndian>(val).unwrap();
         }
 
-        dng_file.write_all(&image_bytes).unwrap();
+        const TAG_CFAREPEARPATTERNDIM:  u16 = 0x828D;
+        const TAG_CFAPATTERN2:          u16 = 0x828E;
+        const TAG_DNGVERSION:           u16 = 0xC612;
+        const TAG_COLORMATRIX1:         u16 = 0xC621;
+
+        TiffFile::new(
+            Ifd::new()
+                .with_entry(tag::PhotometricInterpretation, SHORT::single(32803))
+                .with_entry(tag::NewSubfileType,            LONG::single(1))
+                .with_entry(tag::ImageWidth,                LONG::single(self.width))
+                .with_entry(tag::ImageLength,               LONG::single(self.height))
+                .with_entry(tag::BitsPerSample,             SHORT::single(16))
+                .with_entry(tag::Compression,               SHORT::single(1))
+                .with_entry(tag::Orientation,               SHORT::single(1))
+                .with_entry(tag::SamplesPerPixel,           SHORT::single(1))
+                .with_entry(tag::RowsPerStrip,              LONG::single(self.height))
+                .with_entry(tag::StripByteCounts,           LONG::single(self.width * self.height * 2))
+                .with_entry(TAG_CFAREPEARPATTERNDIM,        SHORT::values(vec![2,2]))
+                .with_entry(TAG_CFAPATTERN2,                BYTE::values(self.bayer_pattern.color_offsets()))
+                .with_entry(TAG_DNGVERSION,                 BYTE::values(vec![1, 4, 0, 0]))
+                .with_entry(TAG_COLORMATRIX1,               SRATIONAL::values(vec![
+                                                                (1,1), (1,2), (1,1),
+                                                                (1,2), (1,1), (1,2),
+                                                                (1,1), (1,2), (1,1)
+                                                            ]))
+                .with_entry(tag::StripOffsets,              ByteBlock::single(image_bytes))
+                .single()
+        ).write_to(file_path).unwrap();
     }
 }
 

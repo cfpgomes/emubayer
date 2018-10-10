@@ -12,6 +12,7 @@ use tiff_encoder::*;
 use tiff_encoder::tiff_type::*;
 use byteorder::{WriteBytesExt, LittleEndian};
 use clap::{Arg, App, SubCommand};
+use clap::{Arg, App};
 
 mod info;
 #[cfg(test)]
@@ -105,14 +106,24 @@ impl RgbImage {
     }
 }
 
-#[derive(Debug)]
 enum BayerPattern {
     RGGB,
     BGGR,
     GRBG,
     GBRG,
 }
-
+impl fmt::Display for BayerPattern {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}",
+            match self {
+                BayerPattern::RGGB => "RGGB",
+                BayerPattern::BGGR => "BGGR",
+                BayerPattern::GRBG => "GRBG",
+                BayerPattern::GBRG => "GBRG",
+            }
+        )
+    }
+}
 impl BayerPattern {
     fn from_str(bayer_pattern: &str) -> BayerPattern {
         match bayer_pattern.to_uppercase().trim() {
@@ -211,7 +222,7 @@ fn main() {
     );
 
     println!("Using input file: {}", input_path);
-    println!("Using Bayer Pattern: {:?}", bayer_pattern);
+    println!("Using Bayer Pattern: {}", bayer_pattern);
 
     let rgb_image = match RgbImage::from_file(input_path) {
         Ok(rgb_image) => rgb_image,

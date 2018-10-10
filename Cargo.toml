@@ -7,3 +7,4 @@ authors = ["TofuLynx <cfpgcp3@gmail.com>"]
 png = "0.13.0"
 byteorder = "1.2.6"
 tiff-encoder = "0.1.0"
+clap = "~2.32.0"

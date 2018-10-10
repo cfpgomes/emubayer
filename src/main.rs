@@ -5,12 +5,13 @@
 extern crate png;
 extern crate tiff_encoder;
 extern crate byteorder;
-
+extern crate clap;
 
 use std::fs::File;
 use tiff_encoder::*;
 use tiff_encoder::tiff_type::*;
 use byteorder::{WriteBytesExt, LittleEndian};
+use clap::{Arg, App, SubCommand};
 
 mod info;
 #[cfg(test)]
@@ -104,6 +105,7 @@ impl RgbImage {
     }
 }
 
+#[derive(Debug)]
 enum BayerPattern {
     RGGB,
     BGGR,
@@ -157,7 +159,7 @@ impl RawImage {
         TiffFile::new(
             Ifd::new()
                 .with_entry(tag::PhotometricInterpretation, SHORT::single(32803))
-                .with_entry(tag::NewSubfileType,            LONG::single(1))
+                .with_entry(tag::NewSubfileType,            LONG::single(0))
                 .with_entry(tag::ImageWidth,                LONG::single(self.width))
                 .with_entry(tag::ImageLength,               LONG::single(self.height))
                 .with_entry(tag::BitsPerSample,             SHORT::single(16))
@@ -170,9 +172,9 @@ impl RawImage {
                 .with_entry(TAG_CFAPATTERN2,                BYTE::values(self.bayer_pattern.color_offsets()))
                 .with_entry(TAG_DNGVERSION,                 BYTE::values(vec![1, 4, 0, 0]))
                 .with_entry(TAG_COLORMATRIX1,               SRATIONAL::values(vec![
-                                                                (1,1), (1,2), (1,1),
-                                                                (1,2), (1,1), (1,2),
-                                                                (1,1), (1,2), (1,1)
+                                                                (1,1), (1,1), (1,1),
+                                                                (1,1), (1,1), (1,1),
+                                                                (1,1), (1,1), (1,1)
                                                             ]))
                 .with_entry(tag::StripOffsets,              ByteBlock::single(image_bytes))
                 .single()
@@ -181,7 +183,43 @@ impl RawImage {
 }
 
 fn main() {
-    let rgb_image = match RgbImage::from_file("sample.png") {
+    let matches = App::new("emubayer")
+                            .version("0.1")
+                            .author("Cláudio Gomes (TofuLynx) <cfpgcp3@gmail.com>")
+                            .about("Bayer CFA camera emulator that takes a \"picture\" of a provided PNG image and saves the result as a DNG file.")
+                            .arg(Arg::with_name("INPUT")
+                                .help("Sets the input PNG file to use")
+                                .long_help("Sets the input PNG file to use. It must be a RGB image.")
+                                .required(true)
+                                .index(1)
+                                )
+                            .arg(Arg::with_name("BAYERPATTERN")
+                                .help("Sets the Bayer Pattern to use")
+                                .long_help("Sets the Bayter Pattern to use. Digital image sensors use a Color Filter Array with a specific pattern, usually called Bayer Filter Mosaic, which follows a pattern that is called Bayer Pattern here. There are 4 possible patterns: RGGB, BGGR, GRBG and GBRG; where R means Red, G means Green and B means Blue.")
+                                .required(true)
+                                .takes_value(true)
+                                .possible_values(&["RGGB", "BGGR", "GRBG", "GBRG"])
+                                .case_insensitive(true)
+                                .index(2)
+                                )
+                            .get_matches();
+    
+    let input_path = matches.value_of("INPUT").unwrap();
+
+    let bayer_pattern;
+
+    match matches.value_of("BAYERPATTERN") {
+        Some("RGGB") => bayer_pattern = BayerPattern::RGGB,
+        Some("BGGR") => bayer_pattern = BayerPattern::RGGB,
+        Some("GRBG") => bayer_pattern = BayerPattern::RGGB,
+        Some("GBRG") => bayer_pattern = BayerPattern::RGGB,
+        _ => std::process::exit(1)
+    }
+
+    println!("Using input file: {}", input_path);
+    println!("Using Bayer Pattern: {:?}", bayer_pattern);
+
+    let rgb_image = match RgbImage::from_file(input_path) {
         Ok(rgb_image) => rgb_image,
         Err(err) => {
             eprintln!("Error: {}", err);
@@ -189,8 +227,8 @@ fn main() {
         }
     };
 
-    let raw_image = rgb_image.to_raw(BayerPattern::RGGB);
+    let raw_image = rgb_image.to_raw(bayer_pattern);
     raw_image.save_as_dng("test.dng");
 
-    println!("Hello, world!");
+    println!("DNG file successfully generated.");
 }

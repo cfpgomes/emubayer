@@ -172,9 +172,9 @@ impl RawImage {
                 .with_entry(TAG_CFAPATTERN2,                BYTE::values(self.bayer_pattern.color_offsets()))
                 .with_entry(TAG_DNGVERSION,                 BYTE::values(vec![1, 4, 0, 0]))
                 .with_entry(TAG_COLORMATRIX1,               SRATIONAL::values(vec![
-                                                                (1,1), (1,1), (1,1),
-                                                                (1,1), (1,1), (1,1),
-                                                                (1,1), (1,1), (1,1)
+                                                                (1,1), (0,1), (0,1),
+                                                                (0,1), (1,1), (0,1),
+                                                                (0,1), (0,1), (1,1)
                                                             ]))
                 .with_entry(tag::StripOffsets,              ByteBlock::single(image_bytes))
                 .single()
@@ -206,15 +206,9 @@ fn main() {
     
     let input_path = matches.value_of("INPUT").unwrap();
 
-    let bayer_pattern;
-
-    match matches.value_of("BAYERPATTERN") {
-        Some("RGGB") => bayer_pattern = BayerPattern::RGGB,
-        Some("BGGR") => bayer_pattern = BayerPattern::RGGB,
-        Some("GRBG") => bayer_pattern = BayerPattern::RGGB,
-        Some("GBRG") => bayer_pattern = BayerPattern::RGGB,
-        _ => std::process::exit(1)
-    }
+    let bayer_pattern = BayerPattern::from_str(
+        matches.value_of("BAYERPATTERN").unwrap()
+    ).unwrap();
 
     println!("Using input file: {}", input_path);
     println!("Using Bayer Pattern: {:?}", bayer_pattern);

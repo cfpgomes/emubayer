@@ -11,8 +11,8 @@ use std::fs::File;
 use tiff_encoder::*;
 use tiff_encoder::tiff_type::*;
 use byteorder::{WriteBytesExt, LittleEndian};
-use clap::{Arg, App, SubCommand};
 use clap::{Arg, App};
+use std::fmt;
 
 mod info;
 #[cfg(test)]

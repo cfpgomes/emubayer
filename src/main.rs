@@ -114,13 +114,13 @@ enum BayerPattern {
 }
 
 impl BayerPattern {
-    fn from_str(bayer_pattern: &str) -> Result<BayerPattern, &str> {
+    fn from_str(bayer_pattern: &str) -> BayerPattern {
         match bayer_pattern.to_uppercase().trim() {
-            "RGGB" => Ok(BayerPattern::RGGB),
-            "BGGR" => Ok(BayerPattern::BGGR),
-            "GRBG" => Ok(BayerPattern::GRBG),
-            "GBRG" => Ok(BayerPattern::GBRG),
-            _ => Err(info::error::INVALID_PATTERN),
+            "RGGB" => BayerPattern::RGGB,
+            "BGGR" => BayerPattern::BGGR,
+            "GRBG" => BayerPattern::GRBG,
+            "GBRG" => BayerPattern::GBRG,
+            _ => panic!("Could not parse bayer pattern from str: Unexpected value given."),
         }
     }
 
@@ -208,7 +208,7 @@ fn main() {
 
     let bayer_pattern = BayerPattern::from_str(
         matches.value_of("BAYERPATTERN").unwrap()
-    ).unwrap();
+    );
 
     println!("Using input file: {}", input_path);
     println!("Using Bayer Pattern: {:?}", bayer_pattern);

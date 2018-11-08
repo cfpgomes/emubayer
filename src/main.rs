@@ -65,22 +65,43 @@ impl RgbImage {
         })
     }
 
-    fn size(&self) -> u32 {
-        self.width * self.height
+    fn even_width(&self) -> u32 {
+        if self.width % 2 == 0 {
+            self.width
+        } else {
+            self.width - 1
+        }
+    }
+
+    fn even_height(&self) -> u32 {
+        if self.height % 2 == 0 {
+            self.height
+        } else {
+            self.height - 1
+        }
+    }
+
+    fn even_size(&self) -> u32 {
+        self.even_width() * self.even_height()
     }
 
     pub fn to_raw(self, bayer_pattern: BayerPattern) -> RawImage {
         let width = self.width as usize;
-        let height = self.height as usize;
+        let is_even = width % 2 == 0;
         let color_offsets = bayer_pattern.color_offsets();
 
-        let mut raw_data: Vec<u16> = vec![0; self.size() as usize];
+        let mut raw_data: Vec<u16> = vec![0; self.even_size() as usize];
         let mut raw_index;
 
-        for row in (0..height).step_by(2) {
-            for column in (0..width).step_by(2) {
+
+        println!("{}", self.even_width());
+        println!("{}", self.even_height());
+        println!("{}", self.even_size());
+
+        for row in (0..self.even_height()).step_by(2) {
+            for column in (0..self.even_width()).step_by(2) {
                 // Top Left.
-                raw_index = row * width + column;
+                raw_index = (row * self.even_width() + column + if is_even { 0 } else { row * 3 }) as usize;                
                 raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[0] as usize)] as u16) << 8;
 
                 // Top Right.
@@ -88,7 +109,7 @@ impl RgbImage {
                 raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[1] as usize)] as u16) << 8;
 
                 // Bottom Right.
-                raw_index += width;
+                raw_index += self.even_width() as usize;
                 raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[3] as usize)] as u16) << 8;
 
                 // Bottom Left.
@@ -98,8 +119,8 @@ impl RgbImage {
         }
 
         RawImage {
-            width: self.width,
-            height: self.height,
+            width: self.even_width(),
+            height: self.even_height(),
             data: raw_data,
             bayer_pattern: bayer_pattern,
         }
@@ -131,7 +152,7 @@ impl BayerPattern {
             "BGGR" => BayerPattern::BGGR,
             "GRBG" => BayerPattern::GRBG,
             "GBRG" => BayerPattern::GBRG,
-            _ => panic!("Could not parse bayer pattern from str: Unexpected value given."),
+            _ => panic!("Could not parse Bayer pattern from str: Unexpected value given."),
         }
     }
 

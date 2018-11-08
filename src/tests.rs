@@ -4,8 +4,9 @@
 
 use super::*;
 
-fn get_input_vector() -> Vec<u8> {
+fn get_input_vector_even() -> Vec<u8> {
     // R->1 G->2 B->3
+    // 8x8 image
     vec![
         1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
         1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
@@ -18,12 +19,28 @@ fn get_input_vector() -> Vec<u8> {
     ]
 }
 
+fn get_input_vector_odd() -> Vec<u8> {
+    // R->1 G->2 B->3
+    // 9x9 image
+    vec![
+        1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
+        1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
+        1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
+        1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
+        1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
+        1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
+        1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
+        1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
+        1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3,
+    ]
+}
+
 #[test]
-fn test_image_extract_rggb() {
+fn test_image_extract_rggb_even() {
     let rgb_image = RgbImage {
         width: 8,
         height: 8,
-        data: get_input_vector(),
+        data: get_input_vector_even(),
         bit_depth: BitDepth::Eight,
     };
 
@@ -42,11 +59,34 @@ fn test_image_extract_rggb() {
 }
 
 #[test]
-fn test_image_extract_bggr() {
+fn test_image_extract_rggb_odd() {
     let rgb_image = RgbImage {
         width: 8,
         height: 8,
-        data: get_input_vector(),
+        data: get_input_vector_odd(),
+        bit_depth: BitDepth::Eight,
+    };
+
+    let raw_image = rgb_image.to_raw(BayerPattern::RGGB);
+
+    assert_eq!(raw_image.data, vec![
+        1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8,
+        2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8,
+        1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8,
+        2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8,
+        1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8,
+        2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8,
+        1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8,
+        2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8,
+    ]);
+}
+
+#[test]
+fn test_image_extract_bggr_even() {
+    let rgb_image = RgbImage {
+        width: 8,
+        height: 8,
+        data: get_input_vector_even(),
         bit_depth: BitDepth::Eight,
     };
 
@@ -65,11 +105,34 @@ fn test_image_extract_bggr() {
 }
 
 #[test]
-fn test_image_extract_grbg() {
+fn test_image_extract_bggr_odd() {
     let rgb_image = RgbImage {
         width: 8,
         height: 8,
-        data: get_input_vector(),
+        data: get_input_vector_odd(),
+        bit_depth: BitDepth::Eight,
+    };
+
+    let raw_image = rgb_image.to_raw(BayerPattern::BGGR);
+
+    assert_eq!(raw_image.data, vec![
+        3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8,
+        2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8,
+        3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8,
+        2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8,
+        3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8,
+        2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8,
+        3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8,
+        2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8,
+    ]);
+}
+
+#[test]
+fn test_image_extract_grbg_even() {
+    let rgb_image = RgbImage {
+        width: 8,
+        height: 8,
+        data: get_input_vector_even(),
         bit_depth: BitDepth::Eight,
     };
 
@@ -88,11 +151,57 @@ fn test_image_extract_grbg() {
 }
 
 #[test]
-fn test_image_extract_gbrg() {
+fn test_image_extract_grbg_odd() {
     let rgb_image = RgbImage {
         width: 8,
         height: 8,
-        data: get_input_vector(),
+        data: get_input_vector_odd(),
+        bit_depth: BitDepth::Eight,
+    };
+
+    let raw_image = rgb_image.to_raw(BayerPattern::GRBG);
+
+    assert_eq!(raw_image.data, vec![
+        2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8,
+        3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8,
+        2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8,
+        3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8,
+        2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8,
+        3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8,
+        2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8,
+        3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8,
+    ]);
+}
+
+#[test]
+fn test_image_extract_gbrg_even() {
+    let rgb_image = RgbImage {
+        width: 8,
+        height: 8,
+        data: get_input_vector_even(),
+        bit_depth: BitDepth::Eight,
+    };
+
+    let raw_image = rgb_image.to_raw(BayerPattern::GBRG);
+
+    assert_eq!(raw_image.data, vec![
+        2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8,
+        1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8,
+        2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8,
+        1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8,
+        2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8,
+        1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8,
+        2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8, 2<<8, 3<<8,
+        1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8, 1<<8, 2<<8,
+    ]);
+}
+
+#[test]
+fn test_image_extract_gbrg_odd() {
+    let rgb_image = RgbImage {
+        width: 8,
+        height: 8,
+        data: get_input_vector_odd(),
         bit_depth: BitDepth::Eight,
     };
 

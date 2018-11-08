@@ -11,7 +11,8 @@ use std::fs::File;
 use tiff_encoder::*;
 use tiff_encoder::tiff_type::*;
 use byteorder::{WriteBytesExt, LittleEndian};
-use clap::{Arg, App, SubCommand};
+use clap::{Arg, App};
+use std::fmt;
 
 mod info;
 #[cfg(test)]
@@ -64,22 +65,43 @@ impl RgbImage {
         })
     }
 
-    fn size(&self) -> u32 {
-        self.width * self.height
+    fn even_width(&self) -> u32 {
+        if self.width % 2 == 0 {
+            self.width
+        } else {
+            self.width - 1
+        }
+    }
+
+    fn even_height(&self) -> u32 {
+        if self.height % 2 == 0 {
+            self.height
+        } else {
+            self.height - 1
+        }
+    }
+
+    fn even_size(&self) -> u32 {
+        self.even_width() * self.even_height()
     }
 
     pub fn to_raw(self, bayer_pattern: BayerPattern) -> RawImage {
         let width = self.width as usize;
-        let height = self.height as usize;
+        let is_even = width % 2 == 0;
         let color_offsets = bayer_pattern.color_offsets();
 
-        let mut raw_data: Vec<u16> = vec![0; self.size() as usize];
+        let mut raw_data: Vec<u16> = vec![0; self.even_size() as usize];
         let mut raw_index;
 
-        for row in (0..height).step_by(2) {
-            for column in (0..width).step_by(2) {
+
+        println!("{}", self.even_width());
+        println!("{}", self.even_height());
+        println!("{}", self.even_size());
+
+        for row in (0..self.even_height()).step_by(2) {
+            for column in (0..self.even_width()).step_by(2) {
                 // Top Left.
-                raw_index = row * width + column;
+                raw_index = (row * self.even_width() + column + if is_even { 0 } else { row * 3 }) as usize;                
                 raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[0] as usize)] as u16) << 8;
 
                 // Top Right.
@@ -87,7 +109,7 @@ impl RgbImage {
                 raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[1] as usize)] as u16) << 8;
 
                 // Bottom Right.
-                raw_index += width;
+                raw_index += self.even_width() as usize;
                 raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[3] as usize)] as u16) << 8;
 
                 // Bottom Left.
@@ -97,30 +119,40 @@ impl RgbImage {
         }
 
         RawImage {
-            width: self.width,
-            height: self.height,
+            width: self.even_width(),
+            height: self.even_height(),
             data: raw_data,
             bayer_pattern: bayer_pattern,
         }
     }
 }
 
-#[derive(Debug)]
 enum BayerPattern {
     RGGB,
     BGGR,
     GRBG,
     GBRG,
 }
-
+impl fmt::Display for BayerPattern {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}",
+            match self {
+                BayerPattern::RGGB => "RGGB",
+                BayerPattern::BGGR => "BGGR",
+                BayerPattern::GRBG => "GRBG",
+                BayerPattern::GBRG => "GBRG",
+            }
+        )
+    }
+}
 impl BayerPattern {
-    fn from_str(bayer_pattern: &str) -> Result<BayerPattern, &str> {
+    fn from_str(bayer_pattern: &str) -> BayerPattern {
         match bayer_pattern.to_uppercase().trim() {
-            "RGGB" => Ok(BayerPattern::RGGB),
-            "BGGR" => Ok(BayerPattern::BGGR),
-            "GRBG" => Ok(BayerPattern::GRBG),
-            "GBRG" => Ok(BayerPattern::GBRG),
-            _ => Err(info::error::INVALID_PATTERN),
+            "RGGB" => BayerPattern::RGGB,
+            "BGGR" => BayerPattern::BGGR,
+            "GRBG" => BayerPattern::GRBG,
+            "GBRG" => BayerPattern::GBRG,
+            _ => panic!("Could not parse Bayer pattern from str: Unexpected value given."),
         }
     }
 
@@ -172,9 +204,9 @@ impl RawImage {
                 .with_entry(TAG_CFAPATTERN2,                BYTE::values(self.bayer_pattern.color_offsets()))
                 .with_entry(TAG_DNGVERSION,                 BYTE::values(vec![1, 4, 0, 0]))
                 .with_entry(TAG_COLORMATRIX1,               SRATIONAL::values(vec![
-                                                                (1,1), (1,1), (1,1),
-                                                                (1,1), (1,1), (1,1),
-                                                                (1,1), (1,1), (1,1)
+                                                                (1,1), (0,1), (0,1),
+                                                                (0,1), (1,1), (0,1),
+                                                                (0,1), (0,1), (1,1)
                                                             ]))
                 .with_entry(tag::StripOffsets,              ByteBlock::single(image_bytes))
                 .single()
@@ -206,18 +238,12 @@ fn main() {
     
     let input_path = matches.value_of("INPUT").unwrap();
 
-    let bayer_pattern;
-
-    match matches.value_of("BAYERPATTERN") {
-        Some("RGGB") => bayer_pattern = BayerPattern::RGGB,
-        Some("BGGR") => bayer_pattern = BayerPattern::RGGB,
-        Some("GRBG") => bayer_pattern = BayerPattern::RGGB,
-        Some("GBRG") => bayer_pattern = BayerPattern::RGGB,
-        _ => std::process::exit(1)
-    }
+    let bayer_pattern = BayerPattern::from_str(
+        matches.value_of("BAYERPATTERN").unwrap()
+    );
 
     println!("Using input file: {}", input_path);
-    println!("Using Bayer Pattern: {:?}", bayer_pattern);
+    println!("Using Bayer Pattern: {}", bayer_pattern);
 
     let rgb_image = match RgbImage::from_file(input_path) {
         Ok(rgb_image) => rgb_image,

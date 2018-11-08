@@ -2,14 +2,6 @@
 // Project: emubayer
 // License: GNU GPL Version 3 (https://www.gnu.org/licenses/gpl-3.0.en.html)
 
-pub static INVALID_PATTERN: &str = "\
-Could not parse the bayer pattern. Please enter one of the following:
-    RGGB
-    BGGR
-    GRBG
-    GBRG\
-";
-
 pub static INVALID_PNG: &str = "\
 PNG image couldn't be opened.\
 ";

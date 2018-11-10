@@ -61,8 +61,8 @@ fn test_image_extract_rggb_even() {
 #[test]
 fn test_image_extract_rggb_odd() {
     let rgb_image = RgbImage {
-        width: 8,
-        height: 8,
+        width: 9,
+        height: 9,
         data: get_input_vector_odd(),
         bit_depth: BitDepth::Eight,
     };
@@ -107,8 +107,8 @@ fn test_image_extract_bggr_even() {
 #[test]
 fn test_image_extract_bggr_odd() {
     let rgb_image = RgbImage {
-        width: 8,
-        height: 8,
+        width: 9,
+        height: 9,
         data: get_input_vector_odd(),
         bit_depth: BitDepth::Eight,
     };
@@ -153,8 +153,8 @@ fn test_image_extract_grbg_even() {
 #[test]
 fn test_image_extract_grbg_odd() {
     let rgb_image = RgbImage {
-        width: 8,
-        height: 8,
+        width: 9,
+        height: 9,
         data: get_input_vector_odd(),
         bit_depth: BitDepth::Eight,
     };
@@ -199,8 +199,8 @@ fn test_image_extract_gbrg_even() {
 #[test]
 fn test_image_extract_gbrg_odd() {
     let rgb_image = RgbImage {
-        width: 8,
-        height: 8,
+        width: 9,
+        height: 9,
         data: get_input_vector_odd(),
         bit_depth: BitDepth::Eight,
     };

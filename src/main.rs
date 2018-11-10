@@ -94,27 +94,27 @@ impl RgbImage {
         let mut raw_index;
 
 
-        println!("{}", self.even_width());
-        println!("{}", self.even_height());
-        println!("{}", self.even_size());
+        
 
         for row in (0..self.even_height()).step_by(2) {
             for column in (0..self.even_width()).step_by(2) {
+                let odd_offset = if is_even { 0 } else { row * 3 } as usize;
+
                 // Top Left.
-                raw_index = (row * self.even_width() + column + if is_even { 0 } else { row * 3 }) as usize;                
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[0] as usize)] as u16) << 8;
+                raw_index = (row * self.even_width() + column) as usize;                
+                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[0] as usize + odd_offset)] as u16) << 8;
 
                 // Top Right.
                 raw_index += 1;
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[1] as usize)] as u16) << 8;
+                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[1] as usize + odd_offset)] as u16) << 8;
 
                 // Bottom Right.
                 raw_index += self.even_width() as usize;
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[3] as usize)] as u16) << 8;
+                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[3] as usize) + odd_offset] as u16) << 8;
 
                 // Bottom Left.
                 raw_index -= 1;
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[2] as usize)] as u16) << 8;
+                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[2] as usize) + odd_offset] as u16) << 8;
             }
         }
 

@@ -11,7 +11,7 @@ This PNG file appears to be corrupted.\
 ";
 
 pub static INVALID_COLOR_TYPE: &str = "\
-PNG image needs to be RGB Color Type.\
+PNG image needs to be RGB or RGBA Color Type.\
 ";
 
 pub static INVALID_BIT_DEPTH: &str = "\

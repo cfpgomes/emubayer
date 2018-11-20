@@ -7,12 +7,12 @@ extern crate tiff_encoder;
 extern crate byteorder;
 extern crate clap;
 
-use std::fs::File;
-use tiff_encoder::*;
-use tiff_encoder::tiff_type::*;
+use std::{fs::File, fmt, string};
+
+use tiff_encoder::{*, tiff_type::*};
 use byteorder::{WriteBytesExt, LittleEndian};
 use clap::{Arg, App};
-use std::fmt;
+
 
 mod info;
 #[cfg(test)]
@@ -231,7 +231,7 @@ fn main() {
                             .version("0.1")
                             .author("Cláudio Gomes (TofuLynx) <cfpgcp3@gmail.com>")
                             .about("Bayer CFA camera emulator that takes a \"picture\" of a provided PNG image and saves the result as a DNG file.")
-                            .arg(Arg::with_name("INPUT")
+                            .arg(Arg::with_name("INPUT_FILE")
                                 .help("Sets the input PNG file to use")
                                 .long_help("Sets the input PNG file to use. It must be a RGB image.")
                                 .required(true)
@@ -246,9 +246,17 @@ fn main() {
                                 .case_insensitive(true)
                                 .index(2)
                                 )
+                            .arg(Arg::with_name("OUTPUT_FILE")
+                                .help("Sets the filename of the output file.")
+                                .long_help("Sets the filename of the output file. Emubayer automatically appends a .dng extension accordingly. If not specified, the output filename will be the same as the input file.")
+                                .takes_value(true)
+                                .index(3)
+                                )
                             .get_matches();
     
-    let input_path = matches.value_of("INPUT").unwrap();
+    let input_path = matches.value_of("INPUT_FILE").unwrap();
+
+    let output_path = matches.value_of("OUTPUT_FILE").unwrap_or_else(|| matches.value_of("INPUT_FILE").unwrap()).trim_end_matches(".png").trim_end_matches(".dng").to_string() + ".dng";
 
     let bayer_pattern = BayerPattern::from_str(
         matches.value_of("BAYERPATTERN").unwrap()
@@ -266,7 +274,7 @@ fn main() {
     };
 
     let raw_image = rgb_image.to_raw(bayer_pattern);
-    raw_image.save_as_dng("test.dng");
+    raw_image.save_as_dng(&output_path);
 
-    println!("DNG file successfully generated.");
+    println!("DNG file successfully saved as \"{}\".", output_path);
 }

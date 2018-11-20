@@ -41,6 +41,7 @@ fn test_image_extract_rggb_even() {
         width: 8,
         height: 8,
         data: get_input_vector_even(),
+        color_type: ColorType::RGB,
         bit_depth: BitDepth::Eight,
     };
 
@@ -64,6 +65,7 @@ fn test_image_extract_rggb_odd() {
         width: 9,
         height: 9,
         data: get_input_vector_odd(),
+        color_type: ColorType::RGB,
         bit_depth: BitDepth::Eight,
     };
 
@@ -87,6 +89,7 @@ fn test_image_extract_bggr_even() {
         width: 8,
         height: 8,
         data: get_input_vector_even(),
+        color_type: ColorType::RGB,
         bit_depth: BitDepth::Eight,
     };
 
@@ -110,6 +113,7 @@ fn test_image_extract_bggr_odd() {
         width: 9,
         height: 9,
         data: get_input_vector_odd(),
+        color_type: ColorType::RGB,
         bit_depth: BitDepth::Eight,
     };
 
@@ -133,6 +137,7 @@ fn test_image_extract_grbg_even() {
         width: 8,
         height: 8,
         data: get_input_vector_even(),
+        color_type: ColorType::RGB,
         bit_depth: BitDepth::Eight,
     };
 
@@ -156,6 +161,7 @@ fn test_image_extract_grbg_odd() {
         width: 9,
         height: 9,
         data: get_input_vector_odd(),
+        color_type: ColorType::RGB,
         bit_depth: BitDepth::Eight,
     };
 
@@ -179,6 +185,7 @@ fn test_image_extract_gbrg_even() {
         width: 8,
         height: 8,
         data: get_input_vector_even(),
+        color_type: ColorType::RGB,
         bit_depth: BitDepth::Eight,
     };
 
@@ -202,6 +209,7 @@ fn test_image_extract_gbrg_odd() {
         width: 9,
         height: 9,
         data: get_input_vector_odd(),
+        color_type: ColorType::RGB,
         bit_depth: BitDepth::Eight,
     };
 

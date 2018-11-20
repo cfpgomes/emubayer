@@ -23,10 +23,16 @@ enum BitDepth {
     Sixteen,
 }
 
+enum ColorType {
+    RGB,
+    RGBA,
+}
+
 struct RgbImage {
     width: u32,
     height: u32,
     data: Vec<u8>,
+    color_type: ColorType,
     bit_depth: BitDepth,
 }
 
@@ -39,10 +45,13 @@ impl RgbImage {
         let (info, mut reader) = decoder.read_info()
             .map_err(|_| info::error::DECODING_PNG)?;
 
-        // TODO (TofuLynx): Evaluate whether or not to extend support to RGBA Color Type.
-        if info.color_type != png::ColorType::RGB {
-            return Err(info::error::INVALID_COLOR_TYPE);
-        }
+        let color_type = match info.color_type {
+            png::ColorType::RGB => ColorType::RGB,
+            png::ColorType::RGBA => ColorType::RGBA,
+            _ => {
+                return Err(info::error::INVALID_COLOR_TYPE);
+            }
+        };
 
         let bit_depth = match info.bit_depth {
             png::BitDepth::Eight => BitDepth::Eight,
@@ -60,6 +69,7 @@ impl RgbImage {
         Ok(RgbImage {
             width: info.width,
             height: info.height,
+            color_type: color_type,
             data: data,
             bit_depth: bit_depth,
         })
@@ -93,28 +103,30 @@ impl RgbImage {
         let mut raw_data: Vec<u16> = vec![0; self.even_size() as usize];
         let mut raw_index;
 
-
-        
+        let multiplier = match self.color_type {
+            ColorType::RGB => 3,
+            ColorType::RGBA => 4,
+        } as usize;
 
         for row in (0..self.even_height()).step_by(2) {
             for column in (0..self.even_width()).step_by(2) {
-                let odd_offset = if is_even { 0 } else { row * 3 } as usize;
+                let odd_offset = if is_even { 0 } else { row } as usize;
 
                 // Top Left.
                 raw_index = (row * self.even_width() + column) as usize;                
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[0] as usize + odd_offset)] as u16) << 8;
+                raw_data[raw_index] = (self.data[((raw_index + odd_offset) * multiplier + color_offsets[0] as usize)] as u16) << 8;
 
                 // Top Right.
                 raw_index += 1;
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[1] as usize + odd_offset)] as u16) << 8;
+                raw_data[raw_index] = (self.data[((raw_index + odd_offset) * multiplier + color_offsets[1] as usize)] as u16) << 8;
 
                 // Bottom Right.
                 raw_index += self.even_width() as usize;
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[3] as usize) + odd_offset] as u16) << 8;
+                raw_data[raw_index] = (self.data[((raw_index + odd_offset) * multiplier + color_offsets[3] as usize)] as u16) << 8;
 
                 // Bottom Left.
                 raw_index -= 1;
-                raw_data[raw_index] = (self.data[(raw_index * 3 + color_offsets[2] as usize) + odd_offset] as u16) << 8;
+                raw_data[raw_index] = (self.data[((raw_index + odd_offset) * multiplier + color_offsets[2] as usize)] as u16) << 8;
             }
         }
 

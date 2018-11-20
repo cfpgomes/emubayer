@@ -7,7 +7,7 @@ extern crate tiff_encoder;
 extern crate byteorder;
 extern crate clap;
 
-use std::{fs::File, fmt, string};
+use std::{fs::File, fmt};
 
 use tiff_encoder::{*, tiff_type::*};
 use byteorder::{WriteBytesExt, LittleEndian};

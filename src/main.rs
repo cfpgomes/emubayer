@@ -199,6 +199,8 @@ impl RawImage {
         const TAG_CFAPATTERN2:          u16 = 0x828E;
         const TAG_DNGVERSION:           u16 = 0xC612;
         const TAG_COLORMATRIX1:         u16 = 0xC621;
+        const TAG_ASSHOTNEUTRAL:        u16 = 0xC628;
+        const TAG_ASSHOTWHITEXY:        u16 = 0xC629;
 
         TiffFile::new(
             Ifd::new()
@@ -216,10 +218,12 @@ impl RawImage {
                 .with_entry(TAG_CFAPATTERN2,                BYTE::values(self.bayer_pattern.color_offsets()))
                 .with_entry(TAG_DNGVERSION,                 BYTE::values(vec![1, 4, 0, 0]))
                 .with_entry(TAG_COLORMATRIX1,               SRATIONAL::values(vec![
-                                                                (1,1), (0,1), (0,1),
-                                                                (0,1), (1,1), (0,1),
-                                                                (0,1), (0,1), (1,1)
+                                                                (4124564,10000000), (3575761,10000000), (1804375,10000000),
+                                                                (2126729,10000000), (7151522,10000000), (0721750,10000000),
+                                                                (0193339,10000000), (1191920,10000000), (9503041,10000000)
                                                             ]))
+                .with_entry(TAG_ASSHOTNEUTRAL,              SRATIONAL::values(vec![(1,1),(1,1),(1,1)]))
+                .with_entry(TAG_ASSHOTWHITEXY,              SRATIONAL::values(vec![(1,1),(1,1)]))
                 .with_entry(tag::StripOffsets,              ByteBlock::single(image_bytes))
                 .single()
         ).write_to(file_path).unwrap();

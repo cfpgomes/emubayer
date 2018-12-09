@@ -13,8 +13,6 @@ use tiff_encoder::{*, tiff_type::*};
 use byteorder::{WriteBytesExt, LittleEndian};
 use clap::{Arg, App};
 
-
-mod info;
 #[cfg(test)]
 mod tests;
 
@@ -39,32 +37,28 @@ struct RgbImage {
 impl RgbImage {
     pub fn from_file(path: &str) -> Result<RgbImage, &str> {
         let png_file = File::open(path)
-            .map_err(|_| info::error::INVALID_PNG)?;
+            .map_err(|_| "PNG image couldn't be opened.")?;
 
         let decoder = png::Decoder::new(png_file);
         let (info, mut reader) = decoder.read_info()
-            .map_err(|_| info::error::DECODING_PNG)?;
+            .map_err(|_| "This PNG file appears to be corrupted.")?;
 
         let color_type = match info.color_type {
             png::ColorType::RGB => ColorType::RGB,
             png::ColorType::RGBA => ColorType::RGBA,
-            _ => {
-                return Err(info::error::INVALID_COLOR_TYPE);
-            }
+            _ => return Err("PNG image needs to be RGB or RGBA Color Type."),
         };
 
         let bit_depth = match info.bit_depth {
             png::BitDepth::Eight => BitDepth::Eight,
             png::BitDepth::Sixteen => BitDepth::Sixteen,
-            _ => {
-                return Err(info::error::INVALID_BIT_DEPTH);
-            }
+            _ => return Err("PNG image needs to have 8 or 16 Bit Depth."),
         };
 
         // Decode frame.
         let mut data = vec![0; info.buffer_size()];
         reader.next_frame(&mut data)
-            .map_err(|_| info::error::CONVERTING_PNG)?;
+            .map_err(|_| "An error occurred interpreting this PNG image.")?;
 
         Ok(RgbImage {
             width: info.width,
@@ -260,7 +254,11 @@ fn main() {
     
     let input_path = matches.value_of("INPUT_FILE").unwrap();
 
-    let output_path = matches.value_of("OUTPUT_FILE").unwrap_or_else(|| matches.value_of("INPUT_FILE").unwrap()).trim_end_matches(".png").trim_end_matches(".dng").to_string() + ".dng";
+    let output_path = matches.value_of("OUTPUT_FILE")
+        .unwrap_or_else(|| matches.value_of("INPUT_FILE").unwrap())
+        .trim_end_matches(".png")
+        .trim_end_matches(".dng")
+        .to_string() + ".dng";
 
     let bayer_pattern = BayerPattern::from_str(
         matches.value_of("BAYERPATTERN").unwrap()

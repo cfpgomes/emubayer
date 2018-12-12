@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["TofuLynx <cfpgcp3@gmail.com>"]
 
 [dependencies]
-png = "0.13.0"
-byteorder = "1.2.6"
-tiff-encoder = "0.1.0"
-clap = "~2.32.0"
+png = "0.13.2"
+byteorder = "1.2.7"
+tiff-encoder = "0.1.2"
+clap = "2.32.0"

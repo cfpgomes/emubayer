@@ -11,4 +11,4 @@ matrix:
 script:
   - cargo build --verbose --all
   - cargo test --verbose --all
-  - cargo run sample.png RGGB
+  - cargo run samples\input\even_size.png RGGB samples\output\even_size.dng

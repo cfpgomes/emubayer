@@ -6,7 +6,7 @@ extern crate png;
 extern crate tiff_encoder;
 extern crate byteorder;
 
-use std::{fs::File, fmt};
+use std::{fs::File, fmt, path::Path};
 
 use tiff_encoder::{*, tiff_type::*};
 use byteorder::{WriteBytesExt, LittleEndian};
@@ -33,7 +33,7 @@ pub struct RgbImage {
 }
 
 impl RgbImage {
-    pub fn from_file(path: &str) -> Result<RgbImage, &str> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<RgbImage, &'static str> {
         let png_file = File::open(path)
             .map_err(|_| "PNG image couldn't be opened.")?;
 
@@ -178,7 +178,7 @@ pub struct RawImage {
 }
 
 impl RawImage {
-    pub fn save_as_dng(&self, file_path: &str) {
+    pub fn save_as_dng<P: AsRef<Path>>(&self, file_path: P) {
 
         // Image bytes
         let mut image_bytes = Vec::new();

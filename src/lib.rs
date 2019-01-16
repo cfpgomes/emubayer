@@ -2,21 +2,36 @@
 // Project: emubayer
 // License: GNU GPL Version 3 (https://www.gnu.org/licenses/gpl-3.0.en.html)
 
+extern crate byteorder;
 extern crate png;
 extern crate tiff_encoder;
-extern crate byteorder;
 
-use std::{fs::File, fmt, path::Path};
+use std::{fmt, fs::File, path::Path};
 
-use tiff_encoder::{*, tiff_type::*};
-use byteorder::{WriteBytesExt, LittleEndian};
+use byteorder::{LittleEndian, WriteBytesExt};
+use tiff_encoder::{tiff_type::*, *};
 
 #[cfg(test)]
 mod tests;
 
 enum BitDepth {
+    One,
+    Two,
+    Four,
     Eight,
     Sixteen,
+}
+
+impl BitDepth {
+    pub fn to_u32(&self) -> u32 {
+        match self {
+            BitDepth::One => 1,
+            BitDepth::Two => 2,
+            BitDepth::Four => 4,
+            BitDepth::Eight => 8,
+            BitDepth::Sixteen => 16,
+        }
+    }
 }
 
 enum ColorType {
@@ -34,11 +49,11 @@ pub struct RgbImage {
 
 impl RgbImage {
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<RgbImage, &'static str> {
-        let png_file = File::open(path)
-            .map_err(|_| "PNG image couldn't be opened.")?;
+        let png_file = File::open(path).map_err(|_| "PNG image couldn't be opened.")?;
 
         let decoder = png::Decoder::new(png_file);
-        let (info, mut reader) = decoder.read_info()
+        let (info, mut reader) = decoder
+            .read_info()
             .map_err(|_| "This PNG file appears to be corrupted.")?;
 
         let color_type = match info.color_type {
@@ -48,14 +63,17 @@ impl RgbImage {
         };
 
         let bit_depth = match info.bit_depth {
+            png::BitDepth::One => BitDepth::One,
+            png::BitDepth::Two => BitDepth::Two,
+            png::BitDepth::Four => BitDepth::Four,
             png::BitDepth::Eight => BitDepth::Eight,
             png::BitDepth::Sixteen => BitDepth::Sixteen,
-            _ => return Err("PNG image needs to have 8 or 16 Bit Depth."),
         };
 
         // Decode frame.
         let mut data = vec![0; info.buffer_size()];
-        reader.next_frame(&mut data)
+        reader
+            .next_frame(&mut data)
             .map_err(|_| "An error occurred interpreting this PNG image.")?;
 
         Ok(RgbImage {
@@ -91,6 +109,7 @@ impl RgbImage {
         let width = self.width as usize;
         let is_even = width % 2 == 0;
         let color_offsets = bayer_pattern.color_offsets();
+        let shift = 16 - self.bit_depth.to_u32();
 
         let mut raw_data: Vec<u16> = vec![0; self.even_size() as usize];
         let mut raw_index;
@@ -105,20 +124,32 @@ impl RgbImage {
                 let odd_offset = if is_even { 0 } else { row } as usize;
 
                 // Top Left.
-                raw_index = (row * self.even_width() + column) as usize;                
-                raw_data[raw_index] = (self.data[((raw_index + odd_offset) * multiplier + color_offsets[0] as usize)] as u16) << 8;
+                raw_index = (row * self.even_width() + column) as usize;
+                raw_data[raw_index] = (self.data
+                    [((raw_index + odd_offset) * multiplier + color_offsets[0] as usize)]
+                    as u16)
+                    << shift;
 
                 // Top Right.
                 raw_index += 1;
-                raw_data[raw_index] = (self.data[((raw_index + odd_offset) * multiplier + color_offsets[1] as usize)] as u16) << 8;
+                raw_data[raw_index] = (self.data
+                    [((raw_index + odd_offset) * multiplier + color_offsets[1] as usize)]
+                    as u16)
+                    << shift;
 
                 // Bottom Right.
                 raw_index += self.even_width() as usize;
-                raw_data[raw_index] = (self.data[((raw_index + odd_offset) * multiplier + color_offsets[3] as usize)] as u16) << 8;
+                raw_data[raw_index] = (self.data
+                    [((raw_index + odd_offset) * multiplier + color_offsets[3] as usize)]
+                    as u16)
+                    << shift;
 
                 // Bottom Left.
                 raw_index -= 1;
-                raw_data[raw_index] = (self.data[((raw_index + odd_offset) * multiplier + color_offsets[2] as usize)] as u16) << 8;
+                raw_data[raw_index] = (self.data
+                    [((raw_index + odd_offset) * multiplier + color_offsets[2] as usize)]
+                    as u16)
+                    << shift;
             }
         }
 
@@ -139,7 +170,9 @@ pub enum BayerPattern {
 }
 impl fmt::Display for BayerPattern {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}",
+        write!(
+            f,
+            "{}",
             match self {
                 BayerPattern::RGGB => "RGGB",
                 BayerPattern::BGGR => "BGGR",
@@ -179,7 +212,6 @@ pub struct RawImage {
 
 impl RawImage {
     pub fn save_as_dng<P: AsRef<Path>>(&self, file_path: P) {
-
         // Image bytes
         let mut image_bytes = Vec::new();
 
@@ -187,37 +219,57 @@ impl RawImage {
             image_bytes.write_u16::<LittleEndian>(val).unwrap();
         }
 
-        const TAG_CFAREPEARPATTERNDIM:  u16 = 0x828D;
-        const TAG_CFAPATTERN2:          u16 = 0x828E;
-        const TAG_DNGVERSION:           u16 = 0xC612;
-        const TAG_COLORMATRIX1:         u16 = 0xC621;
-        const TAG_ASSHOTNEUTRAL:        u16 = 0xC628;
-        const TAG_ASSHOTWHITEXY:        u16 = 0xC629;
+        const TAG_CFAREPEARPATTERNDIM: u16 = 0x828D;
+        const TAG_CFAPATTERN2: u16 = 0x828E;
+        const TAG_DNGVERSION: u16 = 0xC612;
+        const TAG_COLORMATRIX1: u16 = 0xC621;
+        const TAG_ASSHOTNEUTRAL: u16 = 0xC628;
+        const TAG_ASSHOTWHITEXY: u16 = 0xC629;
 
         TiffFile::new(
             Ifd::new()
                 .with_entry(tag::PhotometricInterpretation, SHORT::single(32803))
-                .with_entry(tag::NewSubfileType,            LONG::single(0))
-                .with_entry(tag::ImageWidth,                LONG::single(self.width))
-                .with_entry(tag::ImageLength,               LONG::single(self.height))
-                .with_entry(tag::BitsPerSample,             SHORT::single(16))
-                .with_entry(tag::Compression,               SHORT::single(1))
-                .with_entry(tag::Orientation,               SHORT::single(1))
-                .with_entry(tag::SamplesPerPixel,           SHORT::single(1))
-                .with_entry(tag::RowsPerStrip,              LONG::single(self.height))
-                .with_entry(tag::StripByteCounts,           LONG::single(self.width * self.height * 2))
-                .with_entry(TAG_CFAREPEARPATTERNDIM,        SHORT::values(vec![2,2]))
-                .with_entry(TAG_CFAPATTERN2,                BYTE::values(self.bayer_pattern.color_offsets()))
-                .with_entry(TAG_DNGVERSION,                 BYTE::values(vec![1, 4, 0, 0]))
-                .with_entry(TAG_COLORMATRIX1,               SRATIONAL::values(vec![
-                                                                (4124564,10000000), (3575761,10000000), (1804375,10000000),
-                                                                (2126729,10000000), (7151522,10000000), (0721750,10000000),
-                                                                (0193339,10000000), (1191920,10000000), (9503041,10000000)
-                                                            ]))
-                .with_entry(TAG_ASSHOTNEUTRAL,              SRATIONAL::values(vec![(1,1),(1,1),(1,1)]))
-                .with_entry(TAG_ASSHOTWHITEXY,              SRATIONAL::values(vec![(1,1),(1,1)]))
-                .with_entry(tag::StripOffsets,              ByteBlock::single(image_bytes))
-                .single()
-        ).write_to(file_path).unwrap();
+                .with_entry(tag::NewSubfileType, LONG::single(0))
+                .with_entry(tag::ImageWidth, LONG::single(self.width))
+                .with_entry(tag::ImageLength, LONG::single(self.height))
+                .with_entry(tag::BitsPerSample, SHORT::single(16))
+                .with_entry(tag::Compression, SHORT::single(1))
+                .with_entry(tag::Orientation, SHORT::single(1))
+                .with_entry(tag::SamplesPerPixel, SHORT::single(1))
+                .with_entry(tag::RowsPerStrip, LONG::single(self.height))
+                .with_entry(
+                    tag::StripByteCounts,
+                    LONG::single(self.width * self.height * 2),
+                )
+                .with_entry(TAG_CFAREPEARPATTERNDIM, SHORT::values(vec![2, 2]))
+                .with_entry(
+                    TAG_CFAPATTERN2,
+                    BYTE::values(self.bayer_pattern.color_offsets()),
+                )
+                .with_entry(TAG_DNGVERSION, BYTE::values(vec![1, 4, 0, 0]))
+                .with_entry(
+                    TAG_COLORMATRIX1,
+                    SRATIONAL::values(vec![
+                        (4124564, 10000000),
+                        (3575761, 10000000),
+                        (1804375, 10000000),
+                        (2126729, 10000000),
+                        (7151522, 10000000),
+                        (0721750, 10000000),
+                        (0193339, 10000000),
+                        (1191920, 10000000),
+                        (9503041, 10000000),
+                    ]),
+                )
+                .with_entry(
+                    TAG_ASSHOTNEUTRAL,
+                    SRATIONAL::values(vec![(1, 1), (1, 1), (1, 1)]),
+                )
+                .with_entry(TAG_ASSHOTWHITEXY, SRATIONAL::values(vec![(1, 1), (1, 1)]))
+                .with_entry(tag::StripOffsets, ByteBlock::single(image_bytes))
+                .single(),
+        )
+        .write_to(file_path)
+        .unwrap();
     }
 }

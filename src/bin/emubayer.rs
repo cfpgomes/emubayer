@@ -2,11 +2,11 @@
 // Project: emubayer
 // License: GNU GPL Version 3 (https://www.gnu.org/licenses/gpl-3.0.en.html)
 
-extern crate emubayer;
 extern crate clap;
+extern crate emubayer;
 
+use clap::{App, Arg};
 use emubayer::*;
-use clap::{Arg, App};
 
 fn main() {
     let matches = App::new("emubayer")
@@ -35,18 +35,18 @@ fn main() {
                                 .index(3)
                                 )
                             .get_matches();
-    
+
     let input_path = matches.value_of("INPUT_FILE").unwrap();
 
-    let output_path = matches.value_of("OUTPUT_FILE")
+    let output_path = matches
+        .value_of("OUTPUT_FILE")
         .unwrap_or_else(|| matches.value_of("INPUT_FILE").unwrap())
         .trim_end_matches(".png")
         .trim_end_matches(".dng")
-        .to_string() + ".dng";
+        .to_string()
+        + ".dng";
 
-    let bayer_pattern = BayerPattern::from_str(
-        matches.value_of("BAYERPATTERN").unwrap()
-    );
+    let bayer_pattern = BayerPattern::from_str(matches.value_of("BAYERPATTERN").unwrap());
 
     println!("Using input file: {}", input_path);
     println!("Using Bayer Pattern: {}", bayer_pattern);

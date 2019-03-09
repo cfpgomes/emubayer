@@ -4,12 +4,15 @@
 
 extern crate byteorder;
 extern crate png;
+#[macro_use]
 extern crate tiff_encoder;
 
 use std::{fmt, fs::File, path::Path};
 
 use byteorder::{LittleEndian, WriteBytesExt};
-use tiff_encoder::{tiff_type::*, *};
+use tiff_encoder::ifd::tags;
+use tiff_encoder::ifd::types::BYTE;
+use tiff_encoder::prelude::*;
 
 #[cfg(test)]
 mod tests;
@@ -228,28 +231,25 @@ impl RawImage {
 
         TiffFile::new(
             Ifd::new()
-                .with_entry(tag::PhotometricInterpretation, SHORT::single(32803))
-                .with_entry(tag::NewSubfileType, LONG::single(0))
-                .with_entry(tag::ImageWidth, LONG::single(self.width))
-                .with_entry(tag::ImageLength, LONG::single(self.height))
-                .with_entry(tag::BitsPerSample, SHORT::single(16))
-                .with_entry(tag::Compression, SHORT::single(1))
-                .with_entry(tag::Orientation, SHORT::single(1))
-                .with_entry(tag::SamplesPerPixel, SHORT::single(1))
-                .with_entry(tag::RowsPerStrip, LONG::single(self.height))
-                .with_entry(
-                    tag::StripByteCounts,
-                    LONG::single(self.width * self.height * 2),
-                )
-                .with_entry(TAG_CFAREPEARPATTERNDIM, SHORT::values(vec![2, 2]))
+                .with_entry(tags::PhotometricInterpretation, SHORT![32803])
+                .with_entry(tags::NewSubfileType, LONG![0])
+                .with_entry(tags::ImageWidth, LONG![self.width])
+                .with_entry(tags::ImageLength, LONG![self.height])
+                .with_entry(tags::BitsPerSample, SHORT![16])
+                .with_entry(tags::Compression, SHORT![1])
+                .with_entry(tags::Orientation, SHORT![1])
+                .with_entry(tags::SamplesPerPixel, SHORT![1])
+                .with_entry(tags::RowsPerStrip, LONG![self.height])
+                .with_entry(tags::StripByteCounts, LONG![self.width * self.height * 2])
+                .with_entry(TAG_CFAREPEARPATTERNDIM, SHORT![2, 2])
                 .with_entry(
                     TAG_CFAPATTERN2,
                     BYTE::values(self.bayer_pattern.color_offsets()),
                 )
-                .with_entry(TAG_DNGVERSION, BYTE::values(vec![1, 4, 0, 0]))
+                .with_entry(TAG_DNGVERSION, BYTE![1, 4, 0, 0])
                 .with_entry(
                     TAG_COLORMATRIX1,
-                    SRATIONAL::values(vec![
+                    SRATIONAL![
                         (4124564, 10000000),
                         (3575761, 10000000),
                         (1804375, 10000000),
@@ -258,15 +258,12 @@ impl RawImage {
                         (0721750, 10000000),
                         (0193339, 10000000),
                         (1191920, 10000000),
-                        (9503041, 10000000),
-                    ]),
+                        (9503041, 10000000)
+                    ],
                 )
-                .with_entry(
-                    TAG_ASSHOTNEUTRAL,
-                    SRATIONAL::values(vec![(1, 1), (1, 1), (1, 1)]),
-                )
-                .with_entry(TAG_ASSHOTWHITEXY, SRATIONAL::values(vec![(1, 1), (1, 1)]))
-                .with_entry(tag::StripOffsets, ByteBlock::single(image_bytes))
+                .with_entry(TAG_ASSHOTNEUTRAL, SRATIONAL![(1, 1), (1, 1), (1, 1)])
+                .with_entry(TAG_ASSHOTWHITEXY, SRATIONAL![(1, 1), (1, 1)])
+                .with_entry(tags::StripOffsets, ByteBlock::single(image_bytes))
                 .single(),
         )
         .write_to(file_path)

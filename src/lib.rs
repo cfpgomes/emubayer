@@ -4,6 +4,7 @@
 
 extern crate byteorder;
 extern crate png;
+
 #[macro_use]
 extern crate tiff_encoder;
 
